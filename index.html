@@ -153,7 +153,9 @@
                 this.level = 1;
                 this.blocksDestroyed = 0; // ブロック破壊カウンター
                 this.ballsToNext = 10; // 次のボール追加まで
-                
+
+                this.enemy = null;
+
                 this.setupAudio();
                 this.bgm = document.getElementById('bgm');
                 if (this.bgm) {
@@ -292,6 +294,7 @@
                 
                 this.resetBalls();
                 this.createBlocks();
+                this.createEnemy();
             }
             
             resetBalls() {
@@ -346,7 +349,26 @@
                     }
                 }
             }
-            
+
+            createEnemy() {
+                if (this.level >= 5) {
+                    const speed = 2 + (this.level - 5) * 0.2;
+                    this.enemy = {
+                        x: this.gameWidth / 2,
+                        y: this.gameHeight / 2,
+                        dx: speed,
+                        dy: speed,
+                        radius: 15,
+                        minRadius: 10,
+                        maxRadius: 25,
+                        growthRate: 0.2,
+                        growing: true
+                    };
+                } else {
+                    this.enemy = null;
+                }
+            }
+
             setupEventListeners() {
                 // タッチイベント
                 this.canvas.addEventListener('touchstart', (e) => {
@@ -423,7 +445,28 @@
             
             update() {
                 if (this.gameState !== 'playing') return;
-                
+
+                if (this.enemy) {
+                    this.enemy.x += this.enemy.dx;
+                    this.enemy.y += this.enemy.dy;
+                    if (this.enemy.x <= this.enemy.radius || this.enemy.x >= this.gameWidth - this.enemy.radius) {
+                        this.enemy.dx = -this.enemy.dx;
+                    }
+                    if (this.enemy.y <= this.enemy.radius || this.enemy.y >= this.gameHeight - this.enemy.radius) {
+                        this.enemy.dy = -this.enemy.dy;
+                    }
+                    if (this.enemy.growing) {
+                        this.enemy.radius += this.enemy.growthRate;
+                        if (this.enemy.radius >= this.enemy.maxRadius) this.enemy.growing = false;
+                    } else {
+                        this.enemy.radius -= this.enemy.growthRate;
+                        if (this.enemy.radius <= this.enemy.minRadius) this.enemy.growing = true;
+                    }
+                }
+
+                let ballRemoved = false;
+                let enemyHit = false;
+
                 // 全ボールの移動処理
                 this.balls.forEach((ball, ballIndex) => {
                     // ボール移動
@@ -441,7 +484,22 @@
                         ball.y = ball.radius; // 修正: 上の壁にめり込まないよう調整
                         this.playWallHitSound();
                     }
-                    
+
+                    // 敵との衝突
+                    if (this.enemy) {
+                        const distX = ball.x - this.enemy.x;
+                        const distY = ball.y - this.enemy.y;
+                        const dist = Math.sqrt(distX * distX + distY * distY);
+                        if (dist < ball.radius + this.enemy.radius) {
+                            ball.remove = true;
+                            ballRemoved = true;
+                            enemyHit = true;
+                            this.createParticles(ball.x, ball.y, '#ffffff');
+                            this.playLifeLostSound();
+                            return;
+                        }
+                    }
+
                     // パドルとの衝突
                     if (ball.y + ball.radius >= this.paddle.y &&
                         ball.y + ball.radius <= this.paddle.y + this.paddle.height + 5 && // 修正: 衝突判定の改善
@@ -514,19 +572,26 @@
                     }
                 });
                 
-                // 落下したボールを削除
+                // 落下したボールや敵に当たったボールを削除
                 for (let i = this.balls.length - 1; i >= 0; i--) {
-                    if (this.balls[i].y > this.gameHeight + 20) { // 修正: マージンを追加
+                    if (this.balls[i].y > this.gameHeight + 20 || this.balls[i].remove) { // 修正: マージンを追加
                         this.balls.splice(i, 1);
+                        ballRemoved = true;
                     }
                 }
-                
+
+                if (ballRemoved) {
+                    this.updateUI();
+                }
+
                 // 全ボールが落下した場合
                 if (this.balls.length === 0) {
                     this.lives--;
                     this.updateUI();
-                    this.playLifeLostSound();
-                    
+                    if (!enemyHit) {
+                        this.playLifeLostSound();
+                    }
+
                     if (this.lives <= 0) {
                         this.gameOver();
                     } else {
@@ -545,7 +610,7 @@
                         document.getElementById('instructions').innerHTML = 'ライフ残り ' + this.lives + '<br>タップでリスタート';
                     }
                 }
-                
+
                 // パーティクル更新
                 this.updateParticles();
             }
@@ -592,6 +657,7 @@
                     ball.dy = (ball.dy / currentSpeed) * ball.speed;
                 });
                 this.createBlocks();
+                this.createEnemy();
                 this.resetBalls();
                 this.gameState = 'waiting';
                 this.playLevelUpSound();
@@ -678,7 +744,18 @@
                     this.ctx.shadowBlur = 0;
                     this.ctx.fillRect(block.x, block.y, block.width, 3);
                 });
-                
+
+                // 敵描画
+                if (this.enemy) {
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.enemy.x, this.enemy.y, this.enemy.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = '#ff0000';
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                }
+
                 // パーティクル描画
                 if (this.particles) {
                     this.ctx.shadowBlur = 0;
