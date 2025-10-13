@@ -139,7 +139,11 @@
         </div>
         <div id="instructions">画面をタッチしてパドルを操作<br>タップでスタート</div>
     </div>
+    
+    <!-- BGM -->
     <audio id="bgm" src="audio/The_Swing_of_Time.mp3" loop preload="auto"></audio>
+    <!-- エンディング曲 -->
+    <audio id="ending" src="audio/project_777698.mp3" preload="auto"></audio>
 
     <script>
         class BreakoutGame {
@@ -152,27 +156,31 @@
                 this.score = 0;
                 this.lives = 3;
                 this.level = 1;
-                this.blocksDestroyed = 0; // ブロック破壊カウンター
-                this.ballsToNext = 10; // 次のボール追加まで
+                this.blocksDestroyed = 0;
+                this.ballsToNext = 10;
 
                 this.enemy = null;
 
                 this.setupAudio();
                 this.bgm = document.getElementById('bgm');
+                this.ending = document.getElementById('ending');
+                
                 if (this.bgm) {
                     this.bgm.volume = 0.4;
                 }
+                if (this.ending) {
+                    this.ending.volume = 0.5;
+                }
+                
                 this.setupGameObjects();
                 this.setupEventListeners();
                 this.gameLoop();
             }
             
             setupAudio() {
-                // Web Audio API初期化
                 this.audioContext = null;
                 this.audioEnabled = false;
                 
-                // 音声を初期化する関数
                 this.initAudio = () => {
                     try {
                         if (!this.audioContext) {
@@ -182,7 +190,6 @@
                         if (this.audioContext.state === 'suspended') {
                             this.audioContext.resume();
                         }
-                        // 初回のユーザー操作でBGM再生を試行
                         if (this.bgm) {
                             const playPromise = this.bgm.play();
                             if (playPromise && playPromise.catch) {
@@ -196,7 +203,6 @@
                 };
             }
             
-            // ビープ音を生成する関数
             playSound(frequency, duration, type = 'sine', volume = 0.3) {
                 if (!this.audioEnabled || !this.audioContext) return;
                 
@@ -221,7 +227,6 @@
                 }
             }
             
-            // 効果音メソッド
             playBlockHitSound() {
                 this.playSound(800, 0.1, 'square', 0.4);
             }
@@ -235,7 +240,6 @@
             }
             
             playGameOverSound() {
-                // 下降音階
                 setTimeout(() => this.playSound(523, 0.2, 'sine', 0.4), 0);
                 setTimeout(() => this.playSound(440, 0.2, 'sine', 0.4), 200);
                 setTimeout(() => this.playSound(349, 0.2, 'sine', 0.4), 400);
@@ -243,7 +247,6 @@
             }
             
             playLevelUpSound() {
-                // 上昇音階
                 setTimeout(() => this.playSound(262, 0.15, 'sine', 0.3), 0);
                 setTimeout(() => this.playSound(330, 0.15, 'sine', 0.3), 150);
                 setTimeout(() => this.playSound(392, 0.15, 'sine', 0.3), 300);
@@ -251,12 +254,10 @@
             }
             
             playLifeLostSound() {
-                // 警告音
                 this.playSound(200, 0.3, 'sawtooth', 0.4);
             }
             
             playNewBallSound() {
-                // 新しいボール追加音
                 setTimeout(() => this.playSound(440, 0.1, 'sine', 0.3), 0);
                 setTimeout(() => this.playSound(554, 0.1, 'sine', 0.3), 100);
                 setTimeout(() => this.playSound(659, 0.2, 'sine', 0.3), 200);
@@ -268,13 +269,11 @@
                 this.canvas.width = rect.width;
                 this.canvas.height = rect.height;
                 
-                // ゲーム領域のサイズを保存
                 this.gameWidth = this.canvas.width;
                 this.gameHeight = this.canvas.height;
             }
             
             setupGameObjects() {
-                // パドル
                 this.paddle = {
                     width: 80,
                     height: 12,
@@ -283,7 +282,6 @@
                     speed: 8
                 };
                 
-                // ボール配列として管理
                 this.balls = [{
                     x: this.gameWidth / 2,
                     y: this.gameHeight / 2,
@@ -299,30 +297,28 @@
             }
             
             resetBalls() {
-                // 全ボールを初期位置に配置
                 this.balls.forEach(ball => {
                     ball.x = this.paddle.x + this.paddle.width / 2;
                     ball.y = this.paddle.y - ball.radius - 5;
-                    const angle = (Math.random() - 0.5) * Math.PI / 3; // -30度～30度
+                    const angle = (Math.random() - 0.5) * Math.PI / 3;
                     ball.dx = Math.sin(angle) * ball.speed;
-                    ball.dy = -Math.abs(Math.cos(angle) * ball.speed); // 修正: 確実に上向きに
+                    ball.dy = -Math.abs(Math.cos(angle) * ball.speed);
                 });
             }
             
             addNewBall() {
-                // 新しいボールを追加
                 const newBall = {
                     x: this.paddle.x + this.paddle.width / 2,
                     y: this.paddle.y - 8 - 5,
                     radius: 8,
                     dx: 3,
                     dy: -3,
-                    speed: 4 + (this.level - 1) * 0.5 // 修正: レベルに応じた初期速度
+                    speed: 4 + (this.level - 1) * 0.5
                 };
                 
                 const angle = (Math.random() - 0.5) * Math.PI / 3;
                 newBall.dx = Math.sin(angle) * newBall.speed;
-                newBall.dy = -Math.abs(Math.cos(angle) * newBall.speed); // 修正: 確実に上向きに
+                newBall.dy = -Math.abs(Math.cos(angle) * newBall.speed);
                 
                 this.balls.push(newBall);
                 this.playNewBallSound();
@@ -371,7 +367,6 @@
             }
 
             setupEventListeners() {
-                // タッチイベント
                 this.canvas.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     this.handleTouch(e);
@@ -384,30 +379,27 @@
                 
                 this.canvas.addEventListener('touchend', (e) => {
                     e.preventDefault();
-                    this.initAudio(); // 最初のタッチで音声初期化
+                    this.initAudio();
                     if (this.gameState === 'waiting') {
                         this.startGame();
                     }
                 });
                 
-                // マウスイベント（デバッグ用）
                 this.canvas.addEventListener('mousemove', (e) => {
                     this.handleMouse(e);
                 });
                 
                 this.canvas.addEventListener('click', (e) => {
-                    this.initAudio(); // 最初のクリックで音声初期化
+                    this.initAudio();
                     if (this.gameState === 'waiting') {
                         this.startGame();
                     }
                 });
                 
-                // リスタートボタン
                 document.getElementById('restartBtn').addEventListener('click', () => {
                     this.restart();
                 });
                 
-                // ウィンドウリサイズ対応
                 window.addEventListener('resize', () => {
                     this.setupCanvas();
                 });
@@ -431,7 +423,6 @@
             movePaddle(x) {
                 this.paddle.x = Math.max(0, Math.min(this.gameWidth - this.paddle.width, x - this.paddle.width / 2));
                 
-                // ボールがパドルに付いている場合（待機状態）
                 if (this.gameState === 'waiting') {
                     this.balls.forEach(ball => {
                         ball.x = this.paddle.x + this.paddle.width / 2;
@@ -468,25 +459,21 @@
                 let ballRemoved = false;
                 let enemyHit = false;
 
-                // 全ボールの移動処理
                 this.balls.forEach((ball, ballIndex) => {
-                    // ボール移動
                     ball.x += ball.dx;
                     ball.y += ball.dy;
                     
-                    // 壁との衝突
                     if (ball.x <= ball.radius || ball.x >= this.gameWidth - ball.radius) {
                         ball.dx = -ball.dx;
-                        ball.x = Math.max(ball.radius, Math.min(this.gameWidth - ball.radius, ball.x)); // 修正: 壁にめり込まないよう調整
+                        ball.x = Math.max(ball.radius, Math.min(this.gameWidth - ball.radius, ball.x));
                         this.playWallHitSound();
                     }
                     if (ball.y <= ball.radius) {
                         ball.dy = -ball.dy;
-                        ball.y = ball.radius; // 修正: 上の壁にめり込まないよう調整
+                        ball.y = ball.radius;
                         this.playWallHitSound();
                     }
 
-                    // 敵との衝突
                     if (this.enemy) {
                         const distX = ball.x - this.enemy.x;
                         const distY = ball.y - this.enemy.y;
@@ -501,25 +488,22 @@
                         }
                     }
 
-                    // パドルとの衝突
                     if (ball.y + ball.radius >= this.paddle.y &&
-                        ball.y + ball.radius <= this.paddle.y + this.paddle.height + 5 && // 修正: 衝突判定の改善
+                        ball.y + ball.radius <= this.paddle.y + this.paddle.height + 5 &&
                         ball.x >= this.paddle.x - ball.radius &&
                         ball.x <= this.paddle.x + this.paddle.width + ball.radius &&
                         ball.dy > 0) {
                         
                         this.playPaddleHitSound();
                         
-                        // パドルの位置によって跳ね返り角度を変更
                         const hitPoint = (ball.x - (this.paddle.x + this.paddle.width / 2)) / (this.paddle.width / 2);
-                        const angle = hitPoint * Math.PI / 4; // 修正: 角度の制限を緩和
+                        const angle = hitPoint * Math.PI / 4;
                         const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                         ball.dx = Math.sin(angle) * speed;
-                        ball.dy = -Math.abs(Math.cos(angle) * speed); // 修正: 確実に上向きに
-                        ball.y = this.paddle.y - ball.radius; // 修正: ボールがパドルにめり込まないよう調整
+                        ball.dy = -Math.abs(Math.cos(angle) * speed);
+                        ball.y = this.paddle.y - ball.radius;
                     }
                     
-                    // ブロックとの衝突
                     for (let i = this.blocks.length - 1; i >= 0; i--) {
                         const block = this.blocks[i];
                         if (ball.x + ball.radius >= block.x &&
@@ -527,12 +511,10 @@
                             ball.y + ball.radius >= block.y &&
                             ball.y - ball.radius <= block.y + block.height) {
                             
-                            // ブロック破壊
                             this.blocks.splice(i, 1);
                             this.score += block.points;
                             this.blocksDestroyed++;
                             
-                            // 10個破壊ごとにボール追加
                             if (this.blocksDestroyed % 10 === 0) {
                                 this.addNewBall();
                                 this.ballsToNext = 10;
@@ -541,30 +523,18 @@
                             }
                             
                             this.updateUI();
-                            
-                            // 効果音再生
                             this.playBlockHitSound();
-                            
-                            // パーティクル効果
                             this.createParticles(block.x + block.width / 2, block.y + block.height / 2, block.color);
                             
-                            // ボール反射（改善: より正確な反射）
-                            const blockCenterX = block.x + block.width / 2;
-                            const blockCenterY = block.y + block.height / 2;
-                            const ballCenterX = ball.x;
-                            const ballCenterY = ball.y;
-                            
-                            // どちら側から衝突したかを判定
                             const overlapX = Math.min(ball.x + ball.radius - block.x, block.x + block.width - (ball.x - ball.radius));
                             const overlapY = Math.min(ball.y + ball.radius - block.y, block.y + block.height - (ball.y - ball.radius));
                             
                             if (overlapX < overlapY) {
-                                ball.dx = -ball.dx; // 左右の衝突
+                                ball.dx = -ball.dx;
                             } else {
-                                ball.dy = -ball.dy; // 上下の衝突
+                                ball.dy = -ball.dy;
                             }
                             
-                            // 全ブロック破壊チェック
                             if (this.blocks.length === 0) {
                                 this.nextLevel();
                             }
@@ -573,9 +543,8 @@
                     }
                 });
                 
-                // 落下したボールや敵に当たったボールを削除
                 for (let i = this.balls.length - 1; i >= 0; i--) {
-                    if (this.balls[i].y > this.gameHeight + 20 || this.balls[i].remove) { // 修正: マージンを追加
+                    if (this.balls[i].y > this.gameHeight + 20 || this.balls[i].remove) {
                         this.balls.splice(i, 1);
                         ballRemoved = true;
                     }
@@ -585,7 +554,6 @@
                     this.updateUI();
                 }
 
-                // 全ボールが落下した場合
                 if (this.balls.length === 0) {
                     this.lives--;
                     this.updateUI();
@@ -596,14 +564,13 @@
                     if (this.lives <= 0) {
                         this.gameOver();
                     } else {
-                        // 新しいボールを1個追加してリスタート
                         this.balls = [{
                             x: this.gameWidth / 2,
                             y: this.gameHeight / 2,
                             radius: 8,
                             dx: 3,
                             dy: -3,
-                            speed: 4 + (this.level - 1) * 0.5 // 修正: レベルに応じた速度
+                            speed: 4 + (this.level - 1) * 0.5
                         }];
                         this.resetBalls();
                         this.gameState = 'waiting';
@@ -612,7 +579,6 @@
                     }
                 }
 
-                // パーティクル更新
                 this.updateParticles();
             }
             
@@ -649,10 +615,8 @@
             
             nextLevel() {
                 this.level++;
-                // 全ボールの速度を上げる
                 this.balls.forEach(ball => {
-                    ball.speed = Math.min(ball.speed + 0.5, 8); // 修正: 最大速度制限
-                    // 速度ベクトルを更新
+                    ball.speed = Math.min(ball.speed + 0.5, 8);
                     const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                     ball.dx = (ball.dx / currentSpeed) * ball.speed;
                     ball.dy = (ball.dy / currentSpeed) * ball.speed;
@@ -670,6 +634,20 @@
             gameOver() {
                 this.gameState = 'gameOver';
                 this.playGameOverSound();
+                
+                // BGMを停止してエンディング曲を再生
+                if (this.bgm) {
+                    this.bgm.pause();
+                    this.bgm.currentTime = 0;
+                }
+                if (this.ending) {
+                    this.ending.currentTime = 0;
+                    const playPromise = this.ending.play();
+                    if (playPromise && playPromise.catch) {
+                        playPromise.catch(() => {});
+                    }
+                }
+                
                 document.getElementById('finalScore').textContent = '最終スコア: ' + this.score;
                 document.getElementById('gameOver').style.display = 'block';
             }
@@ -683,7 +661,19 @@
                 this.gameState = 'waiting';
                 this.particles = [];
                 
-                // ボールを1個に戻す
+                // エンディング曲を停止してBGMを再生
+                if (this.ending) {
+                    this.ending.pause();
+                    this.ending.currentTime = 0;
+                }
+                if (this.bgm) {
+                    this.bgm.currentTime = 0;
+                    const playPromise = this.bgm.play();
+                    if (playPromise && playPromise.catch) {
+                        playPromise.catch(() => {});
+                    }
+                }
+                
                 this.balls = [{
                     x: this.gameWidth / 2,
                     y: this.gameHeight / 2,
@@ -710,20 +700,16 @@
             }
             
             draw() {
-                // 画面クリア
                 this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
                 
-                // シャドウをリセット
                 this.ctx.shadowColor = 'transparent';
                 this.ctx.shadowBlur = 0;
                 
-                // パドル描画
                 this.ctx.fillStyle = '#ffffff';
                 this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
                 this.ctx.shadowBlur = 5;
                 this.ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.width, this.paddle.height);
                 
-                // 全ボール描画
                 this.ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
                 this.ctx.shadowBlur = 10;
                 this.balls.forEach(ball => {
@@ -733,20 +719,17 @@
                     this.ctx.fill();
                 });
                 
-                // ブロック描画
                 this.ctx.shadowBlur = 3;
                 this.blocks.forEach(block => {
                     this.ctx.fillStyle = block.color;
                     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
                     this.ctx.fillRect(block.x, block.y, block.width, block.height);
                     
-                    // ブロックのハイライト
                     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
                     this.ctx.shadowBlur = 0;
                     this.ctx.fillRect(block.x, block.y, block.width, 3);
                 });
 
-                // 敵描画
                 if (this.enemy) {
                     this.ctx.shadowBlur = 10;
                     this.ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
@@ -757,7 +740,6 @@
                     this.ctx.shadowBlur = 0;
                 }
 
-                // パーティクル描画
                 if (this.particles) {
                     this.ctx.shadowBlur = 0;
                     this.particles.forEach(p => {
@@ -767,7 +749,6 @@
                     });
                 }
                 
-                // 待機中の点滅効果
                 if (this.gameState === 'waiting') {
                     const alpha = (Math.sin(Date.now() * 0.01) + 1) / 2;
                     this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.1})`;
@@ -775,7 +756,6 @@
                     this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
                 }
                 
-                // シャドウをリセット
                 this.ctx.shadowColor = 'transparent';
                 this.ctx.shadowBlur = 0;
             }
@@ -787,12 +767,10 @@
             }
         }
         
-        // ゲーム開始
         window.addEventListener('load', () => {
             new BreakoutGame();
         });
         
-        // iOS Safari対応
         document.addEventListener('touchstart', function(e) {
             e.preventDefault();
         }, { passive: false });
