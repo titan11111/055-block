@@ -158,6 +158,8 @@
                 this.level = 1;
                 this.blocksDestroyed = 0;
                 this.ballsToNext = 10;
+                this.savedLevel = undefined;
+                this.savedScore = undefined;
 
                 this.enemy = null;
 
@@ -635,6 +637,10 @@
                 this.gameState = 'gameOver';
                 this.playGameOverSound();
                 
+                // 現在のレベルを保存（リスタート時に同じステージから再開するため）
+                this.savedLevel = this.level;
+                this.savedScore = this.score;
+                
                 // BGMを停止してエンディング曲を再生
                 if (this.bgm) {
                     this.bgm.pause();
@@ -653,9 +659,15 @@
             }
             
             restart() {
-                this.score = 0;
+                // レベルとスコアを保持（同じステージから再開）
+                if (this.savedLevel !== undefined) {
+                    this.level = this.savedLevel;
+                }
+                if (this.savedScore !== undefined) {
+                    this.score = this.savedScore;
+                }
+                
                 this.lives = 3;
-                this.level = 1;
                 this.blocksDestroyed = 0;
                 this.ballsToNext = 10;
                 this.gameState = 'waiting';
@@ -674,21 +686,31 @@
                     }
                 }
                 
+                // 現在のレベルに応じたボールの速度を設定
+                const ballSpeed = 4 + (this.level - 1) * 0.5;
                 this.balls = [{
                     x: this.gameWidth / 2,
                     y: this.gameHeight / 2,
                     radius: 8,
                     dx: 3,
                     dy: -3,
-                    speed: 4
+                    speed: ballSpeed
                 }];
                 
-                this.setupGameObjects();
+                // 同じレベルのブロックと敵を再生成
+                this.createBlocks();
+                this.createEnemy();
+                this.resetBalls();
+                
+                // パドルの位置をリセット
+                this.paddle.x = this.gameWidth / 2 - this.paddle.width / 2;
+                this.balls[0].x = this.paddle.x + this.paddle.width / 2;
+                
                 this.updateUI();
                 
                 document.getElementById('gameOver').style.display = 'none';
                 document.getElementById('instructions').style.display = 'block';
-                document.getElementById('instructions').innerHTML = '画面をタッチしてパドルを操作<br>タップでスタート';
+                document.getElementById('instructions').innerHTML = 'レベル ' + this.level + ' から再開<br>画面をタッチしてパドルを操作<br>タップでスタート';
             }
             
             updateUI() {
