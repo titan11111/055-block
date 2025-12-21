@@ -68,6 +68,8 @@
             text-align: center;
             display: none;
             z-index: 20;
+            touch-action: auto;
+            pointer-events: auto;
         }
         
         #gameOver h2 {
@@ -90,6 +92,10 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s;
+            touch-action: manipulation;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
         
         #restartBtn:active {
@@ -398,7 +404,16 @@
                     }
                 });
                 
-                document.getElementById('restartBtn').addEventListener('click', () => {
+                const restartBtn = document.getElementById('restartBtn');
+                const restartHandler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.restart();
+                };
+                restartBtn.addEventListener('click', restartHandler);
+                restartBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     this.restart();
                 });
                 
@@ -794,10 +809,18 @@
         });
         
         document.addEventListener('touchstart', function(e) {
+            // ボタンやゲームオーバー画面内のタッチは許可
+            if (e.target.closest('#gameOver') || e.target.closest('#restartBtn')) {
+                return;
+            }
             e.preventDefault();
         }, { passive: false });
         
         document.addEventListener('touchmove', function(e) {
+            // ボタンやゲームオーバー画面内のタッチは許可
+            if (e.target.closest('#gameOver') || e.target.closest('#restartBtn')) {
+                return;
+            }
             e.preventDefault();
         }, { passive: false });
     </script>
